@@ -9,7 +9,6 @@ import UIKit
 
 class ViewController: UIViewController {
     
-    
     @IBOutlet var mainLabel: UILabel!
     @IBOutlet var subLabel: UILabel!
     
@@ -25,9 +24,8 @@ class ViewController: UIViewController {
     
     @IBOutlet var resultButton: UIButton!
     
-    var height = 0.0
-    var weight = 0.0
     var bmiString = ""
+    let defaults = UserDefaults.standard
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -44,11 +42,14 @@ class ViewController: UIViewController {
         weightLabel.text = "몸무게를 입력해주세요"
         
         resultButton.setTitle("계산하기", for: .normal)
+        resultButton.backgroundColor = .purple
         resultButton.tintColor = .white
         resultButton.layer.cornerRadius = 10
+                
+        heightTextField.text = "\(defaults.double(forKey: "Height"))"
+        weightTextField.text = "\(defaults.double(forKey: "Weight"))"
         
-        changedButton()
-        
+        setNavigationItem()
     }
     
     @IBAction func keyboardDismiss(_ sender: UITapGestureRecognizer) {
@@ -62,17 +63,14 @@ class ViewController: UIViewController {
         }
         if let height = Double(text) {
             if height > 230 || height < 30 {
-                heightResultLabel.text = "계산할 수 없는 키입니다."
-                heightResultLabel.textColor = .red
-                self.height = height
+                defaults.set(heightTextField.text, forKey: "Height")
+                changedLabel(heightResultLabel, text: "계산할 수 없는 키입니다.", color: UIColor.red)
             } else {
-                heightResultLabel.text = "키 : \(height)cm"
-                heightResultLabel.textColor = .black
-                self.height = height
+                defaults.set(heightTextField.text, forKey: "Height")
+                changedLabel(heightResultLabel, text: "몸무게: \(height)kg", color: UIColor.black)
             }
         } else {
-            heightResultLabel.text = "숫자와 .만 입력 가능합니다."
-            heightResultLabel.textColor = .red
+            changedLabel(heightResultLabel, text: "숫자와 .만 입력 가능합니다.", color: UIColor.red)
         }
     }
     
@@ -83,27 +81,23 @@ class ViewController: UIViewController {
         }
         if let weight = Double(text) {
             if weight > 200 || weight < 5 {
-                weightResultLabel.text = "계산할 수 없는 몸무게입니다."
-                weightResultLabel.textColor = .red
-                self.weight = weight
+                defaults.set(weightTextField.text, forKey: "Weight")
+                changedLabel(weightResultLabel, text: "계산할 수 없는 몸무게입니다.", color: UIColor.red)
             } else {
-                weightResultLabel.text = "몸무게: \(weight)kg"
-                weightResultLabel.textColor = .black
-                self.weight = weight
+                defaults.set(weightTextField.text, forKey: "Weight")
+                changedLabel(weightResultLabel, text: "몸무게: \(weight)kg", color: UIColor.black)
             }
         } else {
-            weightResultLabel.text = "숫자와 .만 입력 가능합니다."
-            weightResultLabel.textColor = .red
+            changedLabel(weightResultLabel, text: "숫자와 .만 입력 가능합니다.", color: UIColor.red)
         }
     }
     
-    @IBAction func changedTextField(_ sender: UITextField) {
-        changedButton()
-    }
-    
     @IBAction func resultButtonClicked(_ sender: UIButton) {
-        height = height / 100
-        let bmi = weight / (height * height)
+        let userHeight = defaults.double(forKey: "Height")
+        let userWeight = defaults.double(forKey: "Weight")
+        
+        let height = userHeight / 100
+        let bmi = userWeight / (height * height)
         
         switch bmi {
         case ..<18.5: bmiString = "저체중"
@@ -113,33 +107,41 @@ class ViewController: UIViewController {
         default: print("error")
         }
         
-        let alert = UIAlertController(title: "당신의 BMI는 \(bmiString)입니다.", message: "입력한 키: \(height), 몸무게: \(weight)", preferredStyle: .alert)
+        let alert = UIAlertController(title: "", message: "", preferredStyle: .alert)
+        
+        if userHeight > 30.0 && userHeight < 230.0 && userWeight > 5.0 && userWeight < 200.0 {
+            alert.title = "당신의 BMI는 \(bmiString)입니다."
+            alert.message = "입력한 키: \(userHeight), 몸무게: \(userWeight)"
+        } else {
+            alert.title = "잘못된 값을 입력하셨습니다."
+            alert.message = "키와 몸무게를 정확히 입력해주세요"
+        }
+        
         let oneButton = UIAlertAction(title: "완료", style: .cancel)
         alert.addAction(oneButton)
         present(alert, animated: true)
-        
-        reset()
-        
+                
     }
     
-    func changedButton() {
-        if height > 30 && height < 230 && weight > 5 && weight < 200 {
-            resultButton.isEnabled = true
-            resultButton.backgroundColor = .purple
-        } else {
-            resultButton.isEnabled = false
-            resultButton.backgroundColor = .gray.withAlphaComponent(0.3)
+    func changedLabel(_ label: UILabel, text: String, color: UIColor) {
+        label.text = text
+        weightResultLabel.textColor = color
+    }
+    
+    func setNavigationItem() {
+        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Reset", style: .plain, target: self, action: #selector(rightBarButtonClicked))
+        navigationItem.rightBarButtonItem?.tintColor = .purple
+    }
+    
+    @objc func rightBarButtonClicked() {
+        for key in UserDefaults.standard.dictionaryRepresentation().keys {
+            UserDefaults.standard.removeObject(forKey: key.description)
         }
-    }
-    
-    func reset() {
-        height = 0.0
-        weight = 0.0
+        
         heightTextField.text = ""
         weightTextField.text = ""
         heightResultLabel.text = ""
         weightResultLabel.text = ""
-        changedButton()
     }
 }
 
